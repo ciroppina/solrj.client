@@ -4,21 +4,17 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.noggit.JSONParser;
-import org.noggit.JSONUtil;
 
 public class MySolrJClient {
 
 	public static void main(String[] args) {
-		new MySolrJClient("localhost", 8983, "referti").run();
+
 		File json = new File("src/main/resources/spq.json");
 		byte[] bytes = null;
 		try {
@@ -26,7 +22,6 @@ public class MySolrJClient {
 			new BufferedInputStream(new FileInputStream(json))
 			.read(bytes);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -35,32 +30,6 @@ public class MySolrJClient {
 		new MySolrJClient("localhost", 8983, "referti").indexFromJson(aJson);
 	}
 
-	private void run() {
-		this._urlString = "http://localhost:8983/solr/referti";
-		SolrClient solr = new HttpSolrClient.Builder(_urlString).build();
-		
-		//indexing a doc
-		SolrInputDocument document = new SolrInputDocument();
-		document.addField("DocumentoID", "552200_2015022569_201508171209_01_0030");
-		document.addField("MPI", "141402");
-		document.addField("Nosologico", "2015022599");
-		document.addField("DataInizio", "2015-08-17 12:09");
-		document.addField("DataFine", "2015-08-20 11:53");
-		document.addField("ErogatoreID", "12");
-		document.addField("Erogatore", "RICOVERI ORDINARI");
-		document.addField("PrestazioneID", "30");
-		document.addField("Prestazione", "GASTROENTERITE DA SALMONELLA");
-		document.addField("Referto", "Anim'e chi t'astra");
-		try {
-			UpdateResponse response = solr.add(document);
-			// Remember to commit your changes!
-			solr.commit();
-		} catch (SolrServerException | IOException e) {
-			System.out.println("cor cavolo che indicizza");
-			e.printStackTrace();
-		}
-	}
-	
 	public void indexFromJson(String aJson) {
 		String aJson1 = aJson.substring(aJson.indexOf("\"") );
 		String aJson2 = aJson1.substring(0, aJson1.lastIndexOf('}') );
@@ -68,6 +37,7 @@ public class MySolrJClient {
 		String[] documents = aJson2.split("\\},[\n\r\\.?\\s]*\\{");
 		System.out.println(documents.length + " documenti Json");
 		
+		Long i = System.currentTimeMillis();
 		for (String jdoc : documents) {
 			SolrInputDocument document = new SolrInputDocument();
 			//System.out.println(jdoc.trim());
@@ -85,12 +55,22 @@ public class MySolrJClient {
 			//loop json docs
 			try {
 				UpdateResponse response = _solr.add(document);
+				System.out.println("adding document took (ms): " 
+					+ response.getElapsedTime() );
 				// Remember to commit your changes!
-				_solr.commit();
+				//_solr.commit();
 			} catch (SolrServerException | IOException e) {
 				System.out.println("cor cavolo che indicizza");
 				e.printStackTrace();
 			}
+		}
+		Long e = System.currentTimeMillis();
+		System.out.println("overall indexing (ms) took: " + (e - i));
+		// Remember to commit your changes!
+		try {
+			_solr.commit();
+		} catch (SolrServerException | IOException ex) {
+			ex.printStackTrace();
 		}
 	}
 	
